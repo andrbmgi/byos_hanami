@@ -98,20 +98,18 @@ module Terminus
 
           def replace_preprocessed mold, screen, parameters
             Pathname.mktmpdir do |directory|
-              path = Pathname(directory).join("input.png")
-              
-              # Download and write the preprocessed image
+              path = Pathname(directory).join "input.png"
+
               mini_magick::Image.open(mold.content)
                                .write(path)
                                .then do
-                # Replace the screen's image with the downloaded one
                 path.open { |io| screen.replace io, metadata: {"filename" => mold.filename} }
-                Success repository.update(screen.id, 
-                                        image_data: screen.image_attributes, 
+                Success repository.update(screen.id,
+                                        image_data: screen.image_attributes,
                                         **parameters.except(:uri, :preprocessed))
               end
             end
-          rescue => error
+          rescue StandardError => error
             Failure "Failed to process preprocessed image: #{error.message}"
           end
 
