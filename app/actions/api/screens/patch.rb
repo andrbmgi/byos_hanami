@@ -25,8 +25,8 @@ module Terminus
               optional(:label).filled :string
               optional(:name).filled :string
               optional(:content).filled :string
-              optional(:uri).filled :string
-              optional(:preprocessed).filled :bool
+              optional(:uri) { filled? > str? }
+              optional(:preprocessed) { bool? }
             end
           end
 
@@ -51,11 +51,6 @@ module Terminus
           end
 
           def update screen, parameters
-            # Debug: log what we're receiving
-            logger.info "PATCH parameters: #{parameters.to_h.inspect}"
-            logger.info "Has uri key? #{parameters.key?(:uri)}, value: #{parameters[:uri].inspect}"
-            logger.info "Has preprocessed key? #{parameters.key?(:preprocessed)}, value: #{parameters[:preprocessed].inspect}"
-            
             if parameters.key? :content
               merge(screen, parameters).bind { |attributes| build_mold attributes }
                                        .bind { |instance| screenshot instance, screen, parameters }
