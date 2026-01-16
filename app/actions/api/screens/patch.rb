@@ -51,14 +51,17 @@ module Terminus
           end
 
           def update screen, parameters
+            has_uri = parameters.key?(:uri) && !parameters[:uri].nil? && !parameters[:uri].empty?
+            has_preprocessed = parameters.key?(:preprocessed) && parameters[:preprocessed] == true
+            
             if parameters.key?(:content)
               merge(screen, parameters).bind { |attributes| build_mold attributes }
                                        .bind { |instance| screenshot instance, screen, parameters }
-            elsif parameters.key?(:uri) && parameters[:preprocessed]
+            elsif has_uri && has_preprocessed
               merge(screen, parameters).bind { |attributes| build_mold_for_preprocessed attributes }
                                        .bind { |instance| replace_preprocessed instance, screen, parameters }
             else
-              Success repository.update(screen.id, **parameters)
+              Success repository.update(screen.id, **parameters.except(:uri, :preprocessed, :content))
             end
           end
 
