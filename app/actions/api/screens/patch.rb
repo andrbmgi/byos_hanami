@@ -9,6 +9,7 @@ module Terminus
         class Patch < Base
           include Deps[
             "aspects.screens.creators.temp_path",
+            "aspects.screens.creators.preprocessed",
             repository: "repositories.screen",
             model_repository: "repositories.model"
           ]
@@ -24,6 +25,8 @@ module Terminus
               optional(:label).filled :string
               optional(:name).filled :string
               optional(:content).filled :string
+              optional(:uri).filled :string
+              optional(:preprocessed).filled :bool
             end
           end
 
@@ -48,9 +51,12 @@ module Terminus
           end
 
           def update screen, parameters
-            if parameters.key? :content
+            if parameters.key?(:content)
               merge(screen, parameters).bind { |attributes| build_mold attributes }
                                        .bind { |instance| screenshot instance, screen, parameters }
+            elsif parameters.key?(:uri) && parameters[:preprocessed]
+              merge(screen, parameters).bind { |attributes| build_mold_for_preprocessed attributes }
+                                       .bind { |instance| replace_preprocessed instance, screen, parameters }
             else
               Success repository.update(screen.id, **parameters)
             end
@@ -74,8 +80,28 @@ module Terminus
             end
           end
 
+          def build_mold_for_preprocessed attributes
+            id = attributes[:model_id]
+
+            model_repository.find(id).then do |record|
+              if record
+                Success mold.for(record, **attributes.slice(:label, :name).merge(content: attributes[:uri]))
+              else
+                Failure "Unable to find model for ID: #{id}."
+              end
+            end
+          end
+
           def screenshot mold, screen, parameters
             temp_path.call(mold) { |path| replace path, screen, **parameters }
+          end
+
+          def replace_preprocessed mold, screen, parameters
+            preprocessed.call(mold).bind do |updated_screen|
+              screen.replace updated_screen.image_open,
+                             metadata: {"filename" => updated_screen.image_name}
+              Success repository.update(screen.id, image_data: screen.image_attributes, **parameters.except(:uri, :preprocessed))
+            end
           end
 
           def replace(path, screen, **)
