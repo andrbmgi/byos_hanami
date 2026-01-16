@@ -8,8 +8,8 @@ module Terminus
         # :reek:DataClump
         class Patch < Base
           include Deps[
+            :mini_magick,
             "aspects.screens.creators.temp_path",
-            "aspects.screens.creators.preprocessed",
             repository: "repositories.screen",
             model_repository: "repositories.model"
           ]
@@ -100,11 +100,22 @@ module Terminus
           end
 
           def replace_preprocessed mold, screen, parameters
-            preprocessed.call(mold).bind do |updated_screen|
-              screen.replace updated_screen.image_open,
-                             metadata: {"filename" => updated_screen.image_name}
-              Success repository.update(screen.id, image_data: screen.image_attributes, **parameters.except(:uri, :preprocessed))
+            Pathname.mktmpdir do |directory|
+              path = Pathname(directory).join("input.png")
+              
+              # Download and write the preprocessed image
+              mini_magick::Image.open(mold.content)
+                               .write(path)
+                               .then do
+                # Replace the screen's image with the downloaded one
+                path.open { |io| screen.replace io, metadata: {"filename" => mold.filename} }
+                Success repository.update(screen.id, 
+                                        image_data: screen.image_attributes, 
+                                        **parameters.except(:uri, :preprocessed))
+              end
             end
+          rescue => error
+            Failure "Failed to process preprocessed image: #{error.message}"
           end
 
           def replace(path, screen, **)
