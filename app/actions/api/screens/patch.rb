@@ -65,7 +65,7 @@ module Terminus
           def merge screen, parameters
             Success screen.to_h
                           .slice(:model_id, :label, :name)
-                          .merge! parameters.slice(:model_id, :label, :name, :content)
+                          .merge! parameters.slice(:model_id, :label, :name, :content, :uri)
           end
 
           def build_mold attributes
