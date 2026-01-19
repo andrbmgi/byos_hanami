@@ -52,7 +52,8 @@ module Terminus
             if device
               logger.info "Device found and updated",
                          device_id: device.id,
-                         device_name: device.name,
+                         device_label: device.label,
+                         friendly_id: device.friendly_id,
                          mac_address: device.mac_address
               Success(device)
             else

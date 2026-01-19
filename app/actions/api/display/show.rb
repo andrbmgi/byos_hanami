@@ -56,7 +56,8 @@ module Terminus
             payload = build_payload(device, image_attributes)
             
             logger.info "Display API Response", 
-                       device_name: device.name,
+                       device_label: device.label,
+                       friendly_id: device.friendly_id,
                        device_id: device.id,
                        image_url: image_attributes[:image_url],
                        filename: image_attributes[:filename],
@@ -100,7 +101,8 @@ module Terminus
             ]
 
             logger.info "Display API Error Response",
-                       device_name: device.name,
+                       device_label: device.label,
+                       friendly_id: device.friendly_id,
                        device_id: device.id,
                        image_url: screen.image_uri(host: settings.api_uri),
                        filename: screen.image_name,
