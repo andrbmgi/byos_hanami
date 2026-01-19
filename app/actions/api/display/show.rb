@@ -24,9 +24,18 @@ module Terminus
           using Refines::Actions::Response
 
           def handle request, response
+            logger.info "Display API Request",
+                       ip: request.ip,
+                       mac_address: request.get_header("HTTP_ID"),
+                       user_agent: request.get_header("HTTP_USER_AGENT")
+            
             case synchronizer.call request.env
               in Success(device) then process device, request, response
-              else not_found response
+              else
+                logger.warn "Display API - Device not found",
+                           mac_address: request.get_header("HTTP_ID"),
+                           ip: request.ip
+                not_found response
             end
           end
 
@@ -107,6 +116,9 @@ module Terminus
               detail: "Invalid device ID.",
               instance: "/api/display"
             ]
+
+            logger.error "Display API - Device ID invalid or not found",
+                        detail: "Invalid device ID."
 
             response.with body: payload.to_json, format: :problem_details, status: 404
           end
