@@ -17,7 +17,23 @@ module Terminus
         include Pipeable
         include Dry::Monads[:result]
 
-        def call(headers) = pipe firmware_parser.call(headers), :update
+        def call(headers)
+          logger.info "Synchronizer called with headers",
+                     http_id: headers["HTTP_ID"],
+                     http_fw_version: headers["HTTP_FW_VERSION"],
+                     http_model: headers["HTTP_MODEL"]
+          
+          result = firmware_parser.call(headers)
+          
+          case result
+            in Success(payload)
+              logger.info "Firmware parser succeeded", mac_address: payload.mac_address
+              update(result)
+            in Failure(message)
+              logger.error "Firmware parser failed", error: message, headers: headers.slice("HTTP_ID", "HTTP_FW_VERSION", "HTTP_MODEL")
+              result
+          end
+        end
 
         private
 
