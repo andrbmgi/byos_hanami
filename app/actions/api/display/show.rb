@@ -11,6 +11,7 @@ module Terminus
         class Show < Base
           include Deps[
             :settings,
+            :logger,
             "aspects.screens.encoder",
             "aspects.screens.rotator",
             "aspects.screens.gaffer",
@@ -43,7 +44,16 @@ module Terminus
           end
 
           def success device, image_attributes, response
-            response.body = build_payload(device, image_attributes).to_json
+            payload = build_payload(device, image_attributes)
+            
+            logger.info "Display API Response", 
+                       device_name: device.name,
+                       device_id: device.id,
+                       image_url: image_attributes[:image_url],
+                       filename: image_attributes[:filename],
+                       payload: payload.to_h
+            
+            response.body = payload.to_json
           end
 
           def error_for device, message, response
@@ -79,6 +89,13 @@ module Terminus
               image_url: screen.image_uri(host: settings.api_uri),
               **device.as_api_display
             ]
+
+            logger.info "Display API Error Response",
+                       device_name: device.name,
+                       device_id: device.id,
+                       image_url: screen.image_uri(host: settings.api_uri),
+                       filename: screen.image_name,
+                       payload: payload.to_h
 
             response.body = payload.to_json
           end
