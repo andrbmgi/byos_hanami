@@ -29,8 +29,11 @@ module Terminus
             in Success(payload)
               logger.info "Firmware parser succeeded", mac_address: payload.mac_address
               update(result)
-            in Failure(message)
-              logger.error "Firmware parser failed", error: message, headers: headers.slice("HTTP_ID", "HTTP_FW_VERSION", "HTTP_MODEL")
+            in Failure(validation_result)
+              logger.error "Firmware parser validation failed", 
+                          errors: validation_result.errors.to_h,
+                          http_id: headers["HTTP_ID"],
+                          http_fw_version: headers["HTTP_FW_VERSION"]
               result
           end
         end
